@@ -1,15 +1,25 @@
+<?php
+require_once 'db_config.php';
+
+// Fetch frontend menus
+$stmt = $pdo->query("SELECT * FROM menus WHERE menu_type = 'frontend' AND is_active = 1 ORDER BY order_num ASC");
+$frontend_menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ข้อมูลสถิติสาธารณะ - ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย</title>
+    <title>ข้อมูลสถิติสาธารณะ - CRIME MAP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Google Fonts (Kanit) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Kanit', sans-serif; }
     </style>
@@ -32,15 +42,41 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <span class="text-lg sm:text-xl font-bold tracking-wide truncate">🛡️ ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย</span>
+                    <span class="text-lg sm:text-xl font-bold tracking-wide truncate">🛡️ CRIME MAP</span>
                 </div>
                 <!-- Desktop Menu -->
                 <div class="flex items-center gap-2 lg:gap-4">
-                    <a href="login.php" class="bg-white text-blue-800 hover:bg-gray-100 px-4 py-2 rounded-md text-sm font-bold shadow transition">เข้าสู่ระบบเจ้าหน้าที่</a>
+                    <?php foreach ($frontend_menus as $menu): ?>
+                        <a href="<?= htmlspecialchars($menu['url']) ?>" class="<?= htmlspecialchars($menu['css_class'] ?? '') ?>">
+                            <?php if ($menu['icon']): ?><i class="<?= htmlspecialchars($menu['icon']) ?> mr-1"></i><?php endif; ?>
+                            <?= htmlspecialchars($menu['title']) ?>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
     </nav>
+
+    <!-- Hero Slider Section -->
+    <div class="w-full relative bg-gray-900" style="height: 60vh; min-height: 400px;">
+        <div class="swiper heroSwiper w-full h-full">
+            <div class="swiper-wrapper" id="hero-wrapper">
+                <!-- Default Slide in case no images or loading -->
+                <div class="swiper-slide w-full h-full relative flex items-center justify-center bg-blue-900">
+                    <div class="absolute inset-0 bg-blue-900 opacity-80 mix-blend-multiply"></div>
+                    <div class="relative z-10 text-center text-white px-4">
+                        <h1 class="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">พัทลุงปลอดภัย</h1>
+                        <p class="text-lg md:text-xl max-w-2xl mx-auto drop-shadow-md">ร่วมสร้างชุมชนให้น่าอยู่ และปลอดภัยไปด้วยกัน</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Add Pagination -->
+            <div class="swiper-pagination"></div>
+            <!-- Add Navigation -->
+            <div class="swiper-button-next !text-white"></div>
+            <div class="swiper-button-prev !text-white"></div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="flex-grow p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -83,34 +119,47 @@
             </div>
         </div>
 
-        <!-- Bottom Row: Recent Data Table -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-gray-700">รายการรับแจ้งล่าสุด 10 อันดับ</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานที่</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">พื้นที่ (ตำบล/อำเภอ)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">พฤติการณ์</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่แจ้ง</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recent-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Populated by JS -->
-                        <tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">กำลังโหลด...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+
 
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Load Hero Images
+            fetch('api_hero_images.php')
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === 'success' && result.data.length > 0) {
+                        const wrapper = document.getElementById('hero-wrapper');
+                        wrapper.innerHTML = ''; // clear default
+                        result.data.forEach(img => {
+                            const titleHtml = img.title ? `<div class="absolute bottom-10 left-0 right-0 text-center"><h2 class="text-3xl font-bold text-white drop-shadow-lg bg-black/40 inline-block px-6 py-2 rounded-lg">${img.title}</h2></div>` : '';
+                            wrapper.innerHTML += `
+                                <div class="swiper-slide w-full h-full relative">
+                                    <img src="uploads/hero/${img.image_path}" class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+                                    ${titleHtml}
+                                </div>
+                            `;
+                        });
+                    }
+                    // Initialize Swiper after loading images
+                    new Swiper('.heroSwiper', {
+                        loop: true,
+                        autoplay: { delay: 5000, disableOnInteraction: false },
+                        pagination: { el: '.swiper-pagination', clickable: true },
+                        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+                        effect: 'fade',
+                        fadeEffect: { crossFade: true }
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading hero images:', err);
+                    new Swiper('.heroSwiper', { loop: true }); // init with default slide
+                });
+
             // Fetch data from API
             fetch('api_public_dashboard.php')
                 .then(res => res.json())
@@ -120,7 +169,6 @@
                         renderCards(data.total, data.resolved, data.by_type, data.target_total, data.target_resolved, data.target_by_type);
                         renderDistrictChart(data.by_district);
                         renderTypeChart(data.by_type);
-                        renderTable(data.recent);
                     } else {
                         console.error('Error:', result.message);
                     }
@@ -250,56 +298,7 @@
                 });
             }
 
-            function renderTable(reports) {
-                const tbody = document.getElementById('recent-table-body');
-                tbody.innerHTML = '';
 
-                if (reports.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">ยังไม่มีข้อมูล</td></tr>';
-                    return;
-                }
-
-                reports.forEach(r => {
-                    // Format date roughly if exists
-                    let dateStr = '-';
-                    if (r.created_at) {
-                        const d = new Date(r.created_at);
-                        dateStr = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
-                    }
-
-                    const subdistrict = r.subdistrict_name ? 'ต.' + r.subdistrict_name : '-';
-                    const district = r.district_name ? 'อ.' + r.district_name : '-';
-                    
-                    const icon = r.record_type === 'target' ? '🏠' : '📍';
-
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-gray-50 transition-colors';
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-2">
-                                <span class="text-lg">${icon}</span>
-                                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-opacity-20" 
-                                      style="color: ${r.marker_color}; background-color: ${r.marker_color}33;">
-                                    ${r.type_name}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">${r.location_name}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-500">${subdistrict} <br> <span class="text-xs text-gray-400">${district}</span></div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-500 line-clamp-2 max-w-xs" title="${r.details || '-'}">${r.details || '-'}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${dateStr}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
         });
     </script>
     <!-- Footer -->

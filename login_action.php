@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_district_id'] = $user['district_id'];
 
             // พาไปหน้าแผนที่หลัก
-            header("Location: index.php");
+            header("Location: map_dashboard.php");
             exit();
         } else {
             // Login ไม่สำเร็จ
@@ -52,3 +52,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 ?>
+

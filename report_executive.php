@@ -6,7 +6,7 @@ require_once 'auth.php';
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>รายงานผู้บริหาร - ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย</title>
+    <title>รายงานผู้บริหาร - CRIME MAP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -69,7 +69,7 @@ require_once 'auth.php';
         <div class="text-center mb-8 border-b-2 border-gray-800 pb-4">
             <div class="text-5xl mb-2">🛡️</div>
             <h1 class="text-2xl font-bold">รายงานสรุปผลการปฏิบัติการเชิงสถิติ</h1>
-            <h2 class="text-xl font-semibold mt-1">ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย (Phatthalung Smart Safety Data Center)</h2>
+            <h2 class="text-xl font-semibold mt-1">CRIME MAP (Phatthalung Smart Safety Data Center)</h2>
             <p class="text-gray-600 mt-2">พิมพ์เมื่อ: <?= date('d/m/Y H:i') ?></p>
         </div>
 

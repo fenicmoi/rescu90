@@ -51,6 +51,7 @@ $pwa_code = <<<EOD
 EOD;
 
 $files = [
+    'map_dashboard.php',
     'index.php',
     'dashboard.php',
     'add_location.php',
@@ -77,3 +78,5 @@ foreach ($files as $file) {
 }
 echo "PWA setup complete.\n";
 ?>
+
+

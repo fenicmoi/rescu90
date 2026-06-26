@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (result.isConfirmed) {
                         window.location.href = 'add_target.php';
                     } else {
-                        window.location.href = 'index.php';
+                        window.location.href = 'map_dashboard.php';
                     }
                 });
             </script>
@@ -126,3 +126,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 ?>
+

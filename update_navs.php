@@ -8,7 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <div class="flex items-center gap-3">
-                <span class="text-lg sm:text-xl font-bold tracking-wide truncate">🛡️ ศูนย์ข้อมูลอัจฉริยะ</span>
+                <span class="text-lg sm:text-xl font-bold tracking-wide truncate">🛡️ CRIME MAP</span>
             </div>
             <!-- Mobile menu button -->
             <div class="flex md:hidden">
@@ -26,7 +26,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center gap-2 lg:gap-4">
-                <a href="index.php" class="whitespace-nowrap px-3 py-2 rounded-md text-sm font-medium <?= $current_page == 'index.php' ? 'bg-blue-900 text-white shadow-inner' : 'text-blue-200 hover:text-white hover:bg-blue-700 transition' ?>">แผนที่รวม</a>
+                <a href="map_dashboard.php" class="whitespace-nowrap px-3 py-2 rounded-md text-sm font-medium <?= $current_page == 'map_dashboard.php' ? 'bg-blue-900 text-white shadow-inner' : 'text-blue-200 hover:text-white hover:bg-blue-700 transition' ?>">แผนที่รวม</a>
                 
                 <?php if (in_array($user_role_id, [1, 3, 4])): ?>
                 <a href="add_location.php" class="whitespace-nowrap px-3 py-2 rounded-md text-sm font-medium <?= $current_page == 'add_location.php' ? 'bg-blue-900 text-white shadow-inner' : 'text-blue-200 hover:text-white hover:bg-blue-700 transition' ?>">แจ้งจุดเสี่ยง</a>
@@ -54,7 +54,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- Mobile Menu -->
     <div class="md:hidden hidden" id="mobile-menu">
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-blue-800 shadow-inner">
-            <a href="index.php" class="block px-3 py-2 rounded-md text-base font-medium <?= $current_page == 'index.php' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700' ?>">แผนที่รวม</a>
+            <a href="map_dashboard.php" class="block px-3 py-2 rounded-md text-base font-medium <?= $current_page == 'map_dashboard.php' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700' ?>">แผนที่รวม</a>
             
             <?php if (in_array($user_role_id, [1, 3, 4])): ?>
             <a href="add_location.php" class="block px-3 py-2 rounded-md text-base font-medium <?= $current_page == 'add_location.php' ? 'bg-blue-900 text-white' : 'text-blue-200 hover:text-white hover:bg-blue-700' ?>">แจ้งจุดเสี่ยง</a>
@@ -101,7 +101,7 @@ EOD;
 file_put_contents('navbar.php', $navbar_content);
 
 $files = [
-    'index.php',
+    'map_dashboard.php',
     'dashboard.php',
     'add_location.php',
     'add_target.php',
@@ -127,3 +127,4 @@ foreach ($files as $file) {
 }
 echo "Done.\n";
 ?>
+

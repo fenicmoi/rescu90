@@ -17,8 +17,9 @@ try {
         $whereClause = "WHERE rl.district_id = :user_district_id";
         $params[':user_district_id'] = $user_district_id;
     } elseif ($user_role_id == 4) {
-        $whereClause = "WHERE rl.reported_by = :user_id";
+        $whereClause = "WHERE rl.reported_by = :user_id OR rl.district_id = :user_district_id";
         $params[':user_id'] = $user_id;
+        $params[':user_district_id'] = $user_district_id;
     }
     
     if (!empty($_GET['status'])) {
@@ -42,6 +43,8 @@ try {
             rt.type_name,
             rt.marker_color,
             rl.status,
+            rl.preventive_measures,
+            rl.incident_date,
             rl.image_before,
             rl.image_after
         FROM risk_locations rl

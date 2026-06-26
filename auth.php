@@ -22,9 +22,10 @@ function requireRole($allowed_roles) {
         echo "<div style='text-align:center; margin-top:50px; font-family:sans-serif;'>";
         echo "<h1 style='color:red;'>Access Denied / ไม่มีสิทธิ์เข้าถึง</h1>";
         echo "<p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้ หรือทำรายการนี้</p>";
-        echo "<a href='index.php'>กลับหน้าหลัก</a>";
+        echo "<a href='map_dashboard.php'>กลับหน้าหลัก</a>";
         echo "</div>";
         exit();
     }
 }
 ?>
+

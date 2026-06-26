@@ -16,8 +16,9 @@ try {
         $whereClause = "WHERE th.district_id = :user_district_id";
         $params[':user_district_id'] = $user_district_id;
     } elseif ($user_role_id == 4) {
-        $whereClause = "WHERE th.reported_by = :user_id";
+        $whereClause = "WHERE th.reported_by = :user_id OR th.district_id = :user_district_id";
         $params[':user_id'] = $user_id;
+        $params[':user_district_id'] = $user_district_id;
     }
     // 1. Get Target Types
     $stmtTypes = $pdo->query("SELECT * FROM target_types ORDER BY id ASC");
@@ -39,6 +40,8 @@ try {
             th.target_type_id,
             tt.type_name,
             tt.marker_color,
+            th.preventive_measures,
+            th.incident_date,
             th.image_before,
             th.image_after
         FROM target_houses th

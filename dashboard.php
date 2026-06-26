@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Dashboard - ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย</title>
+    <title>Executive Dashboard - CRIME MAP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -82,7 +82,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
                 <h2 class="text-lg font-semibold text-gray-700">รายการรับแจ้งล่าสุด 10 อันดับ</h2>
-                <a href="index.php" class="text-sm text-blue-600 hover:text-blue-800 font-medium">ดูในแผนที่ &rarr;</a>
+                <a href="map_dashboard.php" class="text-sm text-blue-600 hover:text-blue-800 font-medium">ดูในแผนที่ &rarr;</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -304,3 +304,4 @@
     </footer>
 </body>
 </html>
+

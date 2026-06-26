@@ -15,7 +15,7 @@ $type = $_POST['type'] ?? '';
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $new_status = $_POST['status'] ?? '';
 
-if (!in_array($type, ['risk', 'target']) || $id <= 0 || !in_array($new_status, ['active', 'resolved'])) {
+if (!in_array($type, ['risk', 'target']) || $id <= 0 || !in_array($new_status, ['active', 'resolved', 'delete'])) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid parameters']);
     exit;
@@ -29,7 +29,7 @@ try {
     $table = ($type === 'risk') ? 'risk_locations' : 'target_houses';
     
     // Check ownership/permission
-    $stmtCheck = $pdo->prepare("SELECT district_id, reported_by FROM {$table} WHERE id = :id");
+    $stmtCheck = $pdo->prepare("SELECT district_id, reported_by, status FROM {$table} WHERE id = :id");
     $stmtCheck->execute([':id' => $id]);
     $record = $stmtCheck->fetch();
 
@@ -44,7 +44,7 @@ try {
         $can_update = true;
     } elseif ($user_role_id == 3 && $record['district_id'] == $user_district_id) { // District Chief
         $can_update = true;
-    } elseif ($user_role_id == 4 && $record['reported_by'] == $user_id) { // Officer
+    } elseif ($user_role_id == 4 && ($record['reported_by'] == $user_id || ($record['district_id'] == $user_district_id && $record['status'] === 'pending'))) { // Officer
         $can_update = true;
     }
 
@@ -77,13 +77,18 @@ try {
         }
     }
 
-    // Perform Update
-    if ($image_after_path) {
-        $stmtUpdate = $pdo->prepare("UPDATE {$table} SET status = :status, image_after = :image_after WHERE id = :id");
-        $stmtUpdate->execute([':status' => $new_status, ':image_after' => $image_after_path, ':id' => $id]);
+    // Perform Update or Delete
+    if ($new_status === 'delete') {
+        $stmtDel = $pdo->prepare("DELETE FROM {$table} WHERE id = :id");
+        $stmtDel->execute([':id' => $id]);
     } else {
-        $stmtUpdate = $pdo->prepare("UPDATE {$table} SET status = :status WHERE id = :id");
-        $stmtUpdate->execute([':status' => $new_status, ':id' => $id]);
+        if ($image_after_path) {
+            $stmtUpdate = $pdo->prepare("UPDATE {$table} SET status = :status, image_after = :image_after WHERE id = :id");
+            $stmtUpdate->execute([':status' => $new_status, ':image_after' => $image_after_path, ':id' => $id]);
+        } else {
+            $stmtUpdate = $pdo->prepare("UPDATE {$table} SET status = :status WHERE id = :id");
+            $stmtUpdate->execute([':status' => $new_status, ':id' => $id]);
+        }
     }
 
     echo json_encode(['status' => 'success', 'message' => 'Status updated successfully']);

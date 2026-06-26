@@ -1,6 +1,7 @@
 const CACHE_NAME = 'phatthalung-safe-v1';
 const urlsToCache = [
   '/',
+  '/map_dashboard.php',
   '/index.php',
   '/manifest.json',
   '/icons/icon-192.png',
@@ -25,3 +26,5 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
+

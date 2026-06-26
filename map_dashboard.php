@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย - แผนที่จุดเสี่ยง</title>
+    <title>CRIME MAP - แผนที่จุดเสี่ยง</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS -->
@@ -52,10 +52,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         
-        <div class="p-6 bg-blue-700 text-white">
-            <h1 class="text-xl font-bold pr-6">ศูนย์ข้อมูลอัจฉริยะพัทลุงปลอดภัย</h1>
-            <p class="text-sm mt-1 text-blue-100">ระบบบริหารจัดการจุดเสี่ยงเชิงพื้นที่</p>
-        </div>
+        <!-- Removed redundant sidebar header -->
         
         <div class="p-6 flex-grow overflow-y-auto custom-scrollbar">
             <h2 class="text-lg font-semibold mb-4 text-gray-700">ตัวกรองข้อมูล</h2>
@@ -85,8 +82,9 @@
             <div class="mb-6 border-t pt-4 border-gray-200">
                 <label class="block text-sm font-medium text-gray-700 mb-2">สถานะการตรวจสอบ</label>
                 <select id="filter_status" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:border-blue-500 focus:ring focus:ring-blue-200 bg-blue-50 text-blue-900 font-medium">
-                    <option value="">📌 ทั้งหมด (All)</option>
-                    <option value="active" selected>⚠️ ยังมีความเสี่ยง/รอตรวจสอบ</option>
+                    <option value="" selected>📌 ทั้งหมด (All)</option>
+                    <option value="pending">🟡 ข้อมูลใหม่ (รอดำเนินการ)</option>
+                    <option value="active">⚠️ ข้อมูลที่ยืนยันแล้ว/ยังมีความเสี่ยง</option>
                     <option value="resolved">✔️ ดำเนินการแล้ว/ปลอดภัย</option>
                 </select>
             </div>
@@ -459,13 +457,18 @@
                         <div class="font-sans min-w-[220px]">
                             <h3 class="font-bold text-lg mb-1" style="color: ${loc.marker_color};">${loc.type_name}</h3>
                             <p class="text-sm font-semibold text-gray-800 mb-1">📍 ${loc.location_name}</p>
+                            ${loc.incident_date ? `<p class="text-xs text-gray-500 mb-1">📅 วันที่เกิดเหตุ/พบเห็น: ${loc.incident_date}</p>` : ''}
                             <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'}</p>
-                            ${loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ แก้ไขแล้ว/ปลอดภัย</p>' : '<p class="text-sm text-orange-700 bg-orange-50 p-2 rounded font-bold mb-2">⚠️ ยังมีความเสี่ยง</p>'}
+                            ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ แก้ไขแล้ว/ปลอดภัย</p>' : '<p class="text-sm text-orange-700 bg-orange-50 p-2 rounded font-bold mb-2">⚠️ ข้อมูลยืนยันแล้ว/ยังมีความเสี่ยง</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">${loc.details || 'ไม่มีรายละเอียด'}</p>
+                            ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
                             <div class="flex gap-2">
                                 ${imageBefore}
                                 ${imageAfter}
                             </div>
+                            <a href="edit_report.php?id=${loc.id}&type=risk" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition">
+                                📝 จัดการข้อมูลนี้
+                            </a>
                         </div>
                     `;
                     marker.bindPopup(popupContent);
@@ -491,13 +494,18 @@
                         <div class="font-sans border-l-4 pl-3 min-w-[220px]" style="border-color: ${loc.status === 'resolved' ? '#22c55e' : loc.marker_color};">
                             <h3 class="font-bold text-lg mb-1" style="color: ${loc.status === 'resolved' ? '#22c55e' : loc.marker_color};">${loc.type_name}</h3>
                             <p class="text-sm font-semibold text-gray-800 mb-1">เป้าหมาย: ${loc.location_name}</p>
+                            ${loc.incident_date ? `<p class="text-xs text-gray-500 mb-1">📅 วันที่เกิดเหตุ/พบเห็น: ${loc.incident_date}</p>` : ''}
                             <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'}</p>
-                            ${loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ ดำเนินการแล้ว</p>' : '<p class="text-sm text-red-700 bg-red-50 p-2 rounded font-bold mb-2">🚨 รอตรวจสอบ/จับกุม</p>'}
+                            ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ ดำเนินการแล้ว</p>' : '<p class="text-sm text-red-700 bg-red-50 p-2 rounded font-bold mb-2">🚨 ยืนยันแล้ว/รอตรวจสอบจับกุม</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">พฤติการณ์: ${loc.details || 'ไม่มีรายละเอียด'}</p>
+                            ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
                             <div class="flex gap-2">
                                 ${imageBefore}
                                 ${imageAfter}
                             </div>
+                            <a href="edit_report.php?id=${loc.id}&type=target" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition">
+                                📝 จัดการข้อมูลนี้
+                            </a>
                         </div>
                     `;
                     marker.bindPopup(popupContent);

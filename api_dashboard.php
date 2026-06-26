@@ -19,6 +19,12 @@ try {
         $whereRisk = "WHERE reported_by = :user_id";
         $whereTarget = "WHERE reported_by = :user_id";
         $params[':user_id'] = $user_id;
+    } else {
+        if (isset($_GET['district_id']) && is_numeric($_GET['district_id']) && $_GET['district_id'] > 0) {
+            $whereRisk = "WHERE district_id = :filter_district_id";
+            $whereTarget = "WHERE district_id = :filter_district_id";
+            $params[':filter_district_id'] = $_GET['district_id'];
+        }
     }
 
     // 1. ยอดรวมจุดเสี่ยงทั้งหมด และที่แก้ไขแล้ว
@@ -92,6 +98,13 @@ try {
             $sqlRecent = substr_replace($sqlRecent, ":user_id_2", $pos, strlen(":user_id_1"));
         }
         $unionParams = [':user_id_1' => $user_id, ':user_id_2' => $user_id];
+    } elseif (isset($_GET['district_id']) && is_numeric($_GET['district_id']) && $_GET['district_id'] > 0) {
+        $sqlRecent = str_replace(":filter_district_id", ":filter_district_id_1", $sqlRecent);
+        $pos = strpos($sqlRecent, ":filter_district_id_1", strpos($sqlRecent, "UNION ALL"));
+        if ($pos !== false) {
+            $sqlRecent = substr_replace($sqlRecent, ":filter_district_id_2", $pos, strlen(":filter_district_id_1"));
+        }
+        $unionParams = [':filter_district_id_1' => $_GET['district_id'], ':filter_district_id_2' => $_GET['district_id']];
     } else {
         $unionParams = [];
     }

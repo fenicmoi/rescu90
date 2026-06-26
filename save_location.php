@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     text: 'บันทึกข้อมูลพิกัดจุดเสี่ยงเรียบร้อยแล้ว',
                     confirmButtonText: 'ตกลง'
                 }).then(() => {
-                    window.location.href = 'index.php';
+                    window.location.href = 'map_dashboard.php';
                 });
             </script>
             </body></html>
@@ -126,3 +126,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
+
