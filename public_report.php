@@ -80,8 +80,9 @@ try {
                                 <input type="text" name="reporter_name" id="reporter_name" required class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:border-blue-500 focus:ring focus:ring-blue-200" placeholder="ระบุชื่อและนามสกุล">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ติดต่อ <span class="text-red-500">*</span></label>
-                                <input type="text" name="reporter_phone" id="reporter_phone" required class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:border-blue-500 focus:ring focus:ring-blue-200" placeholder="08xxxxxxxx">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ติดต่อ</label>
+                                <input type="text" name="reporter_phone" id="reporter_phone" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:border-blue-500 focus:ring focus:ring-blue-200" placeholder="08xxxxxxxx">
+                                <p class="text-xs text-gray-500 mt-1">ข้อมูลส่วนนี้ไม่บังคับ ใช้สำหรับให้เจ้าหน้าที่ติดต่อประสานงานหรือสอบถามข้อมูลเพิ่มเติมเท่านั้น</p>
                             </div>
                         </div>
 
@@ -239,14 +240,13 @@ try {
             const reporterPhone = document.getElementById('reporter_phone');
 
             btnNext.addEventListener('click', () => {
-                if (reporterName.checkValidity() && reporterPhone.checkValidity()) {
+                if (reporterName.checkValidity()) {
                     step1.classList.add('hidden');
                     step2.classList.remove('hidden');
                     // Need to invalidate size since map might not load tiles properly if initialized in hidden div
                     setTimeout(() => { map.invalidateSize(); }, 100);
                 } else {
                     reporterName.reportValidity();
-                    reporterPhone.reportValidity();
                 }
             });
 

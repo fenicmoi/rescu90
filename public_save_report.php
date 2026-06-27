@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reporterPhone = trim($_POST['reporter_phone'] ?? '');
     $incidentDate = trim($_POST['incident_date'] ?? date('Y-m-d'));
 
-    if (!$locationName || !$districtId || !$subdistrictId || !$lat || !$lng || !$reporterName || !$reporterPhone) {
+    if (!$locationName || !$districtId || !$subdistrictId || !$lat || !$lng || !$reporterName) {
         $_SESSION['error_msg'] = "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน";
         header("Location: public_report.php");
         exit();

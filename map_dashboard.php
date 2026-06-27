@@ -105,6 +105,12 @@
                             🏠 บ้านเป้าหมาย
                         </label>
                     </div>
+                    <div class="flex items-center mt-2 pt-2 border-t border-blue-200">
+                        <input type="checkbox" id="layer-cctv" class="layer-toggle h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                        <label for="layer-cctv" class="ml-2 block text-sm font-semibold text-purple-800 cursor-pointer">
+                            🎥 กล้องวงจรปิด (CCTV)
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -221,8 +227,11 @@
 
             let allLocations = [];
             let allTargets = [];
+            let allCctvs = [];
+            let cctvDataLoaded = false;
             let markersLayer = L.layerGroup().addTo(map);
             let targetsLayer = L.layerGroup().addTo(map);
+            let cctvLayer = L.layerGroup().addTo(map);
 
             function createCustomIcon(color, status, isTarget) {
                 const finalColor = status === 'resolved' ? '#22c55e' : color;
@@ -401,6 +410,7 @@
                 
                 const showRisks = document.getElementById('layer-risks').checked;
                 const showTargets = document.getElementById('layer-targets').checked;
+                const showCctv = document.getElementById('layer-cctv') ? document.getElementById('layer-cctv').checked : true;
 
                 const checkedRiskTypes = Array.from(document.querySelectorAll('.risk-checkbox:checked')).map(cb => cb.value);
                 const checkedTargetTypes = Array.from(document.querySelectorAll('.target-checkbox:checked')).map(cb => cb.value);
@@ -436,6 +446,31 @@
                 } else {
                     targetsLayer.clearLayers();
                 }
+
+                // Render CCTVs
+                if (showCctv) {
+                    if (!cctvDataLoaded) {
+                        cctvDataLoaded = true;
+                        fetch('api_get_cctv.php').then(res => res.json())
+                        .then(cctvResult => {
+                            if (cctvResult && cctvResult.status === 'success') {
+                                allCctvs = cctvResult.data;
+                                applyFilters(); // Re-run filters to render CCTV
+                            }
+                        });
+                    } else {
+                        const filteredCctvs = allCctvs.filter(loc => {
+                            // If no district_id is set, it might be legacy data. 
+                            // But to strictly follow area selection, we check it.
+                            const matchDistrict = (selectedDistrict === 'all') || (loc.district_id == selectedDistrict);
+                            const matchSubdistrict = (selectedSubdistrict === 'all') || (loc.subdistrict_id == selectedSubdistrict);
+                            return matchDistrict && matchSubdistrict;
+                        });
+                        renderCctvs(filteredCctvs);
+                    }
+                } else {
+                    cctvLayer.clearLayers();
+                }
             }
 
             // Render markers on the map
@@ -458,7 +493,11 @@
                             <h3 class="font-bold text-lg mb-1" style="color: ${loc.marker_color};">${loc.type_name}</h3>
                             <p class="text-sm font-semibold text-gray-800 mb-1">📍 ${loc.location_name}</p>
                             ${loc.incident_date ? `<p class="text-xs text-gray-500 mb-1">📅 วันที่เกิดเหตุ/พบเห็น: ${loc.incident_date}</p>` : ''}
-                            <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'}</p>
+                            <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'} <br>
+                            <span class="inline-flex gap-4 mt-2">
+                                <a href="https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}" target="_blank" class="text-blue-600 hover:underline font-medium">🗺️ Google Maps</a>
+                                <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.latitude},${loc.longitude}" target="_blank" class="text-purple-600 hover:underline font-medium">🛣️ Street View</a>
+                            </span></p>
                             ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ แก้ไขแล้ว/ปลอดภัย</p>' : '<p class="text-sm text-orange-700 bg-orange-50 p-2 rounded font-bold mb-2">⚠️ ข้อมูลยืนยันแล้ว/ยังมีความเสี่ยง</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">${loc.details || 'ไม่มีรายละเอียด'}</p>
                             ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
@@ -466,7 +505,7 @@
                                 ${imageBefore}
                                 ${imageAfter}
                             </div>
-                            <a href="edit_report.php?id=${loc.id}&type=risk" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition">
+                            <a href="edit_report.php?id=${loc.id}&type=risk" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition" style="color: #ffffff !important; text-decoration: none;">
                                 📝 จัดการข้อมูลนี้
                             </a>
                         </div>
@@ -495,7 +534,11 @@
                             <h3 class="font-bold text-lg mb-1" style="color: ${loc.status === 'resolved' ? '#22c55e' : loc.marker_color};">${loc.type_name}</h3>
                             <p class="text-sm font-semibold text-gray-800 mb-1">เป้าหมาย: ${loc.location_name}</p>
                             ${loc.incident_date ? `<p class="text-xs text-gray-500 mb-1">📅 วันที่เกิดเหตุ/พบเห็น: ${loc.incident_date}</p>` : ''}
-                            <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'}</p>
+                            <p class="text-sm text-gray-600 mb-2"><strong>ตำบล:</strong> ${loc.subdistrict_name || 'ไม่ระบุ'}, <strong>อำเภอ:</strong> ${loc.district_name || 'ไม่ระบุ'} <br>
+                            <span class="inline-flex gap-4 mt-2">
+                                <a href="https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}" target="_blank" class="text-blue-600 hover:underline font-medium">🗺️ Google Maps</a>
+                                <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.latitude},${loc.longitude}" target="_blank" class="text-purple-600 hover:underline font-medium">🛣️ Street View</a>
+                            </span></p>
                             ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ ดำเนินการแล้ว</p>' : '<p class="text-sm text-red-700 bg-red-50 p-2 rounded font-bold mb-2">🚨 ยืนยันแล้ว/รอตรวจสอบจับกุม</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">พฤติการณ์: ${loc.details || 'ไม่มีรายละเอียด'}</p>
                             ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
@@ -503,7 +546,7 @@
                                 ${imageBefore}
                                 ${imageAfter}
                             </div>
-                            <a href="edit_report.php?id=${loc.id}&type=target" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition">
+                            <a href="edit_report.php?id=${loc.id}&type=target" class="mt-3 block text-center w-full bg-blue-600 text-white text-sm font-bold py-2 rounded shadow hover:bg-blue-700 transition" style="color: #ffffff !important; text-decoration: none;">
                                 📝 จัดการข้อมูลนี้
                             </a>
                         </div>
@@ -511,6 +554,50 @@
                     marker.bindPopup(popupContent);
                     
                     targetsLayer.addLayer(marker);
+                });
+            }
+
+            // Render CCTV Markers
+            function renderCctvs(locations) {
+                cctvLayer.clearLayers();
+                
+                const cctvIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="font-size: 16px; background: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 2px solid #9333ea;">🎥</div>`,
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13]
+                });
+
+                locations.forEach(loc => {
+                    const lat = parseFloat(loc.latitude);
+                    const lng = parseFloat(loc.longitude);
+                    
+                    if(isNaN(lat) || isNaN(lng)) return;
+
+                    const marker = L.marker([lat, lng], { icon: cctvIcon });
+                    
+                    const popupContent = `
+                        <div class="font-sans border-l-4 border-purple-500 pl-3 min-w-[200px]">
+                            <h3 class="font-bold text-lg mb-1 text-purple-700">🎥 ${loc.camera_type || 'CCTV'}</h3>
+                            <p class="text-sm font-semibold text-gray-800 mb-1">จุดตั้ง: ${loc.location_name}</p>
+                            <p class="text-xs text-gray-500 mb-2">สังกัด: ${loc.affiliation} (${loc.police_station})</p>
+                            <span class="inline-flex gap-4 mt-2">
+                                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" class="text-blue-600 hover:underline font-medium text-sm">🗺️ Google Maps</a>
+                                <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}" target="_blank" class="text-purple-600 hover:underline font-medium text-sm">🛣️ Street View</a>
+                            </span>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    cctvLayer.addLayer(marker);
+
+                    // Add Coverage Circle (50 meters)
+                    L.circle([lat, lng], {
+                        color: '#9333ea',
+                        fillColor: '#9333ea',
+                        fillOpacity: 0.1,
+                        weight: 1,
+                        radius: 50
+                    }).addTo(cctvLayer);
                 });
             }
         });

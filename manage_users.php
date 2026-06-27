@@ -3,19 +3,6 @@ require_once 'auth.php';
 requireRole([1]); // Only Super Admin
 
 require_once 'db_config.php';
-
-try {
-    $stmt = $pdo->query("
-        SELECT u.id, u.username, u.name, u.agency, u.position, u.phone, r.role_name, u.district_id, d.name_th as district_name, u.created_at 
-        FROM users u 
-        JOIN roles r ON u.role_id = r.id 
-        LEFT JOIN districts d ON u.district_id = d.id
-        ORDER BY u.id ASC
-    ");
-    $users = $stmt->fetchAll();
-} catch (PDOException $e) {
-    die("Error fetching users: " . $e->getMessage());
-}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -25,19 +12,26 @@ try {
     <title>จัดการผู้ใช้งานระบบ - CRIME MAP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>body { font-family: 'Kanit', sans-serif; }</style>
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e40af">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js');
-            });
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            margin-left: 0.5rem;
         }
-    </script>
+        .dataTables_wrapper .dataTables_length select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.25rem 2rem 0.25rem 0.5rem;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
@@ -54,18 +48,18 @@ try {
         <div class="mb-6 flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">จัดการผู้ใช้งานระบบ</h1>
-                <p class="text-gray-500 text-sm mt-1">รายชื่อบัญชีผู้ใช้ทั้งหมดและสิทธิ์การเข้าถึง (Role-Based Access Control)</p>
+                <p class="text-gray-500 text-sm mt-1">ตั้งค่าผู้ดูแลระบบและเจ้าหน้าที่</p>
             </div>
             <a href="user_form.php" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm font-medium transition flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                 </svg>
-                เพิ่มผู้ใช้ใหม่
+                เพิ่มผู้ใช้งาน
             </a>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-hidden">
+            <table id="tableUsers" class="display responsive nowrap w-full" style="width:100%">
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
@@ -78,56 +72,53 @@ try {
                         <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php foreach ($users as $user): ?>
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <?= $user['id'] ?>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($user['name']) ?></div>
-                            <div class="text-xs text-gray-500"><?= htmlspecialchars($user['position'] ?? '') ?><?= !empty($user['agency']) ? ' (' . htmlspecialchars($user['agency']) . ')' : '' ?></div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900"><?= htmlspecialchars($user['phone'] ?? '-') ?></div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-500"><?= htmlspecialchars($user['username']) ?></div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-500"><?= $user['district_name'] ? 'อ.' . htmlspecialchars($user['district_name']) : '<span class="text-gray-300">ไม่ระบุ / ทั้งจังหวัด</span>' ?></div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <?php 
-                                $roleClass = 'bg-gray-100 text-gray-800';
-                                if ($user['role_name'] == 'Admin') $roleClass = 'bg-purple-100 text-purple-800';
-                                if ($user['role_name'] == 'Governor') $roleClass = 'bg-blue-100 text-blue-800';
-                                if ($user['role_name'] == 'District Chief') $roleClass = 'bg-green-100 text-green-800';
-                                if ($user['role_name'] == 'Officer') $roleClass = 'bg-yellow-100 text-yellow-800';
-                            ?>
-                            <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?= $roleClass ?>">
-                                <?= htmlspecialchars($user['role_name']) ?>
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <?= date('d M Y, H:i', strtotime($user['created_at'])) ?>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="user_form.php?id=<?= $user['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3">✏️ แก้ไข</a>
-                            <?php if ($user['id'] != $user_id): ?>
-                                <button onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>')" class="text-red-600 hover:text-red-900">🗑️ ลบ</button>
-                            <?php else: ?>
-                                <span class="text-gray-300 cursor-not-allowed" title="ไม่สามารถลบบัญชีตัวเองได้">🗑️ ลบ</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                <tbody>
+                    <!-- Data will be loaded by DataTables Server-Side Processing -->
                 </tbody>
             </table>
         </div>
     </main>
 
+    <!-- jQuery & DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
     <script>
+        $(document).ready(function() {
+            $('#tableUsers').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: 'api_dt_users.php',
+                    type: 'POST'
+                },
+                responsive: true,
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json',
+                },
+                order: [[0, 'asc']]
+            });
+
+            <?php if($success_msg): ?>
+            Swal.fire({
+                icon: 'success',
+                title: 'สำเร็จ',
+                text: '<?= htmlspecialchars($success_msg) ?>',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            <?php endif; ?>
+
+            <?php if($error_msg): ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาด',
+                text: '<?= htmlspecialchars($error_msg) ?>'
+            });
+            <?php endif; ?>
+        });
+
         function deleteUser(id, username) {
             Swal.fire({
                 title: 'ยืนยันการลบผู้ใช้',
@@ -156,28 +147,7 @@ try {
             });
         }
     </script>
-
-    <?php if ($success_msg): ?>
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'สำเร็จ',
-            text: <?= json_encode($success_msg) ?>,
-            timer: 2000,
-            showConfirmButton: false
-        });
-    </script>
-    <?php endif; ?>
-
-    <?php if ($error_msg): ?>
-    <script>
-        Swal.fire({
-            icon: 'error',
-            title: 'ข้อผิดพลาด',
-            text: <?= json_encode($error_msg) ?>
-        });
-    </script>
-    <?php endif; ?>
+    
     <!-- Footer -->
     <footer class="mt-auto py-4 text-center text-sm text-gray-500 bg-white border-t border-gray-200">
         พัฒนาโดย <span class="font-bold text-blue-700">จังหวัดพัทลุง</span>

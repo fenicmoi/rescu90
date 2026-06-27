@@ -1,6 +1,6 @@
 <?php
 require_once 'auth.php';
-requireRole([1, 2]); // Admins and Governor
+requireRole([1]); // Only Super Admin
 
 require_once 'db_config.php';
 ?>
@@ -9,7 +9,7 @@ require_once 'db_config.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการประเภทจุดเสี่ยง - CRIME MAP</title>
+    <title>จัดการสถานีตำรวจ - CRIME MAP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
@@ -47,14 +47,14 @@ require_once 'db_config.php';
 
         <div class="mb-6 flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">จัดการประเภทจุดเสี่ยง</h1>
-                <p class="text-gray-500 text-sm mt-1">ตั้งค่าประเภทและสี Marker สำหรับจุดเสี่ยง/จุดล่อแหลมบนแผนที่</p>
+                <h1 class="text-2xl font-bold text-gray-800">จัดการสถานีตำรวจ</h1>
+                <p class="text-gray-500 text-sm mt-1">ตั้งค่ารายชื่อสถานีตำรวจเพื่อใช้ในระบบ CCTV</p>
             </div>
-            <a href="risk_type_form.php" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm font-medium transition flex items-center gap-2">
+            <a href="police_station_form.php" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm text-sm font-medium transition flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                 </svg>
-                เพิ่มประเภทจุดเสี่ยง
+                เพิ่มสถานีตำรวจ
             </a>
         </div>
 
@@ -63,10 +63,11 @@ require_once 'db_config.php';
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">ID</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภทความเสี่ยง</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สี Marker</th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวนจุดเสี่ยงที่ใช้</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสสถานี</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อสถานีตำรวจ</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อำเภอที่ตั้ง</th>
+                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">กล้อง CCTV ในระบบ</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -87,7 +88,7 @@ require_once 'db_config.php';
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: 'api_dt_risk_types.php',
+                    url: 'api_dt_police_stations.php',
                     type: 'POST'
                 },
                 responsive: true,
@@ -114,11 +115,11 @@ require_once 'db_config.php';
             });
             <?php endif; ?>
         });
-
-        function deleteType(id, name) {
+            
+        function deleteStation(id, name) {
             Swal.fire({
                 title: 'ยืนยันการลบ',
-                text: 'คุณต้องการลบประเภท "' + name + '" ใช่หรือไม่?',
+                text: 'คุณต้องการลบ "' + name + '" ใช่หรือไม่? (การลบจะไม่ส่งผลต่อประวัติเดิม แต่จะไม่สามารถเลือกสถานีนี้ได้อีก)',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -127,7 +128,7 @@ require_once 'db_config.php';
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'delete_risk_type.php?id=' + id;
+                    window.location.href = 'delete_police_station.php?id=' + id;
                 }
             });
         }

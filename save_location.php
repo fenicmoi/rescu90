@@ -65,9 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // เตรียมคำสั่ง SQL (Prepared Statement) เพื่อป้องกัน SQL Injection
-        $sql = "INSERT INTO risk_locations (district_id, subdistrict_id, risk_type_id, location_name, latitude, longitude, details, image_before, reported_by, created_at) 
-                VALUES (:district_id, :subdistrict_id, :risk_type_id, :location_name, :latitude, :longitude, :details, :image_before, :reported_by, NOW())";
+        // ตรวจสอบสิทธิ์และพื้นที่เพื่อกำหนดสถานะ (ถ้าเป็นเจ้าหน้าที่ในพื้นที่ตัวเอง ให้อนุมัติอัตโนมัติ)
+        $status = 'pending';
+        if ($user_role_id == 1 || $user_role_id == 2) {
+            $status = 'active'; // Admin, Governor อนุมัติเลย
+        } elseif (($user_role_id == 3 || $user_role_id == 4) && $district_id == $user_district_id) {
+            $status = 'active'; // เจ้าหน้าที่อำเภอแจ้งในอำเภอตัวเอง อนุมัติเลย
+        }
+
+        // 3. เตรียมคำสั่ง SQL บันทึกข้อมูล
+        $sql = "INSERT INTO risk_locations (district_id, subdistrict_id, risk_type_id, location_name, latitude, longitude, details, image_before, reported_by, status, created_at)
+                VALUES (:district_id, :subdistrict_id, :risk_type_id, :location_name, :latitude, :longitude, :details, :image_before, :reported_by, :status, NOW())";
         
         $stmt = $pdo->prepare($sql);
         
@@ -81,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':details', $details, PDO::PARAM_STR);
         $stmt->bindParam(':image_before', $image_before_path, PDO::PARAM_STR);
         $stmt->bindParam(':reported_by', $user_id, PDO::PARAM_INT);
+        $stmt->bindParam(':status', $status, PDO::PARAM_STR);
         
         // รันคำสั่ง
         $stmt->execute();
