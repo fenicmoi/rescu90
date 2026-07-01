@@ -73,12 +73,18 @@ if ($method == 'POST') {
         }
         elseif ($action == 'reorder') {
             $order_data = json_decode($_POST['order_data'], true);
-            // format: [{id: 1, order: 1}, {id: 2, order: 2}]
             if (is_array($order_data)) {
                 $pdo->beginTransaction();
                 $stmt = $pdo->prepare("UPDATE menus SET order_num = ? WHERE id = ?");
+                $stmtWithParent = $pdo->prepare("UPDATE menus SET order_num = ?, parent_id = ? WHERE id = ?");
+                
                 foreach ($order_data as $item) {
-                    $stmt->execute([$item['order'], $item['id']]);
+                    if (array_key_exists('parent_id', $item)) {
+                        $parent_id = $item['parent_id'] !== '' ? $item['parent_id'] : null;
+                        $stmtWithParent->execute([$item['order'], $parent_id, $item['id']]);
+                    } else {
+                        $stmt->execute([$item['order'], $item['id']]);
+                    }
                 }
                 $pdo->commit();
                 echo json_encode(['status' => 'success', 'message' => 'Order updated']);

@@ -152,6 +152,9 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
     <script>
+        // Extract Admin Role for Map editing
+        const isAdmin = <?= (isset($user_role_name) && (strpos(strtolower($user_role_name), 'admin') !== false || $user_role_id == 1)) ? 'true' : 'false' ?>;
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Sidebar Toggle for Mobile
             const sidebar = document.getElementById('main-sidebar');
@@ -481,7 +484,13 @@
                     const customIcon = createCustomIcon(loc.marker_color || '#3b82f6', loc.status, false);
                     
                     // Create marker
-                    const marker = L.marker([parseFloat(loc.latitude), parseFloat(loc.longitude)], { icon: customIcon });
+                    const marker = L.marker([parseFloat(loc.latitude), parseFloat(loc.longitude)], { 
+                        icon: customIcon,
+                        draggable: isAdmin
+                    });
+                    if (isAdmin && marker.dragging) marker.dragging.disable();
+                    
+                    let adminHint = isAdmin ? `<button type="button" class="edit-location-btn w-full mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs shadow transition">📍 แก้ไขพิกัด</button>` : '';
                     
                     // Generate image tags if available
                     const imageBefore = loc.image_before ? `<div class="mt-2 flex-1"><p class="text-xs text-gray-500 mb-1">ภาพสถานที่:</p><img src="uploads/${loc.image_before}" class="w-full h-24 object-cover rounded shadow-sm cursor-pointer hover:opacity-80 transition" onclick="window.open(this.src)"></div>` : '';
@@ -498,6 +507,7 @@
                                 <a href="https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}" target="_blank" class="text-blue-600 hover:underline font-medium">🗺️ Google Maps</a>
                                 <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.latitude},${loc.longitude}" target="_blank" class="text-purple-600 hover:underline font-medium">🛣️ Street View</a>
                             </span></p>
+                            ${adminHint}
                             ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ แก้ไขแล้ว/ปลอดภัย</p>' : '<p class="text-sm text-orange-700 bg-orange-50 p-2 rounded font-bold mb-2">⚠️ ข้อมูลยืนยันแล้ว/ยังมีความเสี่ยง</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">${loc.details || 'ไม่มีรายละเอียด'}</p>
                             ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
@@ -512,6 +522,53 @@
                     `;
                     marker.bindPopup(popupContent);
                     
+                    if (isAdmin) {
+                        marker.on('popupopen', function(e) {
+                            const popupNode = e.popup._contentNode;
+                            const editBtn = popupNode.querySelector('.edit-location-btn');
+                            if (editBtn) {
+                                editBtn.onclick = function() {
+                                    marker.closePopup();
+                                    marker.dragging.enable();
+                                    
+                                    const mapContainer = document.getElementById('map');
+                                    let toast = document.createElement('div');
+                                    toast.className = 'absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-[1000] font-bold animate-pulse pointer-events-none';
+                                    toast.innerText = '📍 โปรดลากหมุดไปยังตำแหน่งใหม่...';
+                                    mapContainer.appendChild(toast);
+                                    
+                                    marker.once('dragend', function(dragEvent) {
+                                        toast.remove();
+                                        const newLat = dragEvent.target.getLatLng().lat;
+                                        const newLng = dragEvent.target.getLatLng().lng;
+                                        if (confirm('ต้องการบันทึกพิกัดใหม่นี้หรือไม่?')) {
+                                            fetch('update_marker_location.php', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ id: loc.id, type: 'incident', lat: newLat, lng: newLng })
+                                            }).then(res => res.json()).then(data => {
+                                                if (data.success) {
+                                                    alert('บันทึกพิกัดใหม่เรียบร้อยแล้ว');
+                                                    loc.latitude = newLat;
+                                                    loc.longitude = newLng;
+                                                } else {
+                                                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                                                    marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                                }
+                                            }).catch(err => {
+                                                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                                                marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                            });
+                                        } else {
+                                            marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                        }
+                                        marker.dragging.disable();
+                                    });
+                                };
+                            }
+                        });
+                    }
+                    
                     // Add to layer group
                     markersLayer.addLayer(marker);
                 });
@@ -523,7 +580,13 @@
                 
                 locations.forEach(loc => {
                     const customIcon = createCustomIcon(loc.marker_color || '#ef4444', loc.status, true);
-                    const marker = L.marker([parseFloat(loc.latitude), parseFloat(loc.longitude)], { icon: customIcon });
+                    const marker = L.marker([parseFloat(loc.latitude), parseFloat(loc.longitude)], { 
+                        icon: customIcon,
+                        draggable: isAdmin
+                    });
+                    if (isAdmin && marker.dragging) marker.dragging.disable();
+                    
+                    let adminHint = isAdmin ? `<button type="button" class="edit-location-btn w-full mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs shadow transition">📍 แก้ไขพิกัด</button>` : '';
                     
                     // Generate image tags if available
                     const imageBefore = loc.image_before ? `<div class="mt-2 flex-1"><p class="text-xs text-gray-500 mb-1">ภาพเป้าหมาย:</p><img src="uploads/${loc.image_before}" class="w-full h-24 object-cover rounded shadow-sm cursor-pointer hover:opacity-80 transition" onclick="window.open(this.src)"></div>` : '';
@@ -539,6 +602,7 @@
                                 <a href="https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}" target="_blank" class="text-blue-600 hover:underline font-medium">🗺️ Google Maps</a>
                                 <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${loc.latitude},${loc.longitude}" target="_blank" class="text-purple-600 hover:underline font-medium">🛣️ Street View</a>
                             </span></p>
+                            ${adminHint}
                             ${loc.status === 'pending' ? '<p class="text-sm text-yellow-700 bg-yellow-50 p-2 rounded font-bold mb-2 animate-pulse">🟡 ข้อมูลใหม่ (รอดำเนินการ)</p>' : (loc.status === 'resolved' ? '<p class="text-sm text-green-700 bg-green-50 p-2 rounded font-bold mb-2">✔️ ดำเนินการแล้ว</p>' : '<p class="text-sm text-red-700 bg-red-50 p-2 rounded font-bold mb-2">🚨 ยืนยันแล้ว/รอตรวจสอบจับกุม</p>')}
                             <p class="text-sm text-gray-700 bg-gray-100 p-2 rounded mb-2">พฤติการณ์: ${loc.details || 'ไม่มีรายละเอียด'}</p>
                             ${loc.preventive_measures ? `<p class="text-sm text-blue-800 bg-blue-50 p-2 rounded mb-2 border border-blue-200">🛡️ <strong>มาตรการป้องกัน:</strong> ${loc.preventive_measures}</p>` : ''}
@@ -552,6 +616,53 @@
                         </div>
                     `;
                     marker.bindPopup(popupContent);
+                    
+                    if (isAdmin) {
+                        marker.on('popupopen', function(e) {
+                            const popupNode = e.popup._contentNode;
+                            const editBtn = popupNode.querySelector('.edit-location-btn');
+                            if (editBtn) {
+                                editBtn.onclick = function() {
+                                    marker.closePopup();
+                                    marker.dragging.enable();
+                                    
+                                    const mapContainer = document.getElementById('map');
+                                    let toast = document.createElement('div');
+                                    toast.className = 'absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-[1000] font-bold animate-pulse pointer-events-none';
+                                    toast.innerText = '📍 โปรดลากหมุดไปยังตำแหน่งใหม่...';
+                                    mapContainer.appendChild(toast);
+                                    
+                                    marker.once('dragend', function(dragEvent) {
+                                        toast.remove();
+                                        const newLat = dragEvent.target.getLatLng().lat;
+                                        const newLng = dragEvent.target.getLatLng().lng;
+                                        if (confirm('ต้องการบันทึกพิกัดใหม่นี้หรือไม่?')) {
+                                            fetch('update_marker_location.php', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ id: loc.id, type: 'target', lat: newLat, lng: newLng })
+                                            }).then(res => res.json()).then(data => {
+                                                if (data.success) {
+                                                    alert('บันทึกพิกัดใหม่เรียบร้อยแล้ว');
+                                                    loc.latitude = newLat;
+                                                    loc.longitude = newLng;
+                                                } else {
+                                                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                                                    marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                                }
+                                            }).catch(err => {
+                                                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                                                marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                            });
+                                        } else {
+                                            marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                        }
+                                        marker.dragging.disable();
+                                    });
+                                };
+                            }
+                        });
+                    }
                     
                     targetsLayer.addLayer(marker);
                 });
@@ -574,13 +685,20 @@
                     
                     if(isNaN(lat) || isNaN(lng)) return;
 
-                    const marker = L.marker([lat, lng], { icon: cctvIcon });
+                    const marker = L.marker([lat, lng], { 
+                        icon: cctvIcon,
+                        draggable: isAdmin
+                    });
+                    if (isAdmin && marker.dragging) marker.dragging.disable();
+                    
+                    let adminHint = isAdmin ? `<button type="button" class="edit-location-btn w-full mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded text-xs shadow transition">📍 แก้ไขพิกัด</button>` : '';
                     
                     const popupContent = `
                         <div class="font-sans border-l-4 border-purple-500 pl-3 min-w-[200px]">
                             <h3 class="font-bold text-lg mb-1 text-purple-700">🎥 ${loc.camera_type || 'CCTV'}</h3>
                             <p class="text-sm font-semibold text-gray-800 mb-1">จุดตั้ง: ${loc.location_name}</p>
                             <p class="text-xs text-gray-500 mb-2">สังกัด: ${loc.affiliation} (${loc.police_station})</p>
+                            ${adminHint}
                             <span class="inline-flex gap-4 mt-2">
                                 <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" class="text-blue-600 hover:underline font-medium text-sm">🗺️ Google Maps</a>
                                 <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}" target="_blank" class="text-purple-600 hover:underline font-medium text-sm">🛣️ Street View</a>
@@ -591,13 +709,65 @@
                     cctvLayer.addLayer(marker);
 
                     // Add Coverage Circle (50 meters)
-                    L.circle([lat, lng], {
+                    const coverage = L.circle([lat, lng], {
                         color: '#9333ea',
                         fillColor: '#9333ea',
                         fillOpacity: 0.1,
                         weight: 1,
                         radius: 50
                     }).addTo(cctvLayer);
+                    
+                    // Event listener for dragging
+                    if (isAdmin) {
+                        marker.on('popupopen', function(e) {
+                            const popupNode = e.popup._contentNode;
+                            const editBtn = popupNode.querySelector('.edit-location-btn');
+                            if (editBtn) {
+                                editBtn.onclick = function() {
+                                    marker.closePopup();
+                                    marker.dragging.enable();
+                                    
+                                    const mapContainer = document.getElementById('map');
+                                    let toast = document.createElement('div');
+                                    toast.className = 'absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-[1000] font-bold animate-pulse pointer-events-none';
+                                    toast.innerText = '📍 โปรดลากหมุดไปยังตำแหน่งใหม่...';
+                                    mapContainer.appendChild(toast);
+                                    
+                                    marker.once('dragend', function(dragEvent) {
+                                        toast.remove();
+                                        const newLat = dragEvent.target.getLatLng().lat;
+                                        const newLng = dragEvent.target.getLatLng().lng;
+                                        if (confirm('ต้องการบันทึกพิกัดใหม่นี้หรือไม่?')) {
+                                            fetch('update_marker_location.php', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ id: loc.id, type: 'cctv', lat: newLat, lng: newLng })
+                                            }).then(res => res.json()).then(data => {
+                                                if (data.success) {
+                                                    alert('บันทึกพิกัดใหม่เรียบร้อยแล้ว');
+                                                    loc.latitude = newLat;
+                                                    loc.longitude = newLng;
+                                                    coverage.setLatLng([newLat, newLng]); // update circle
+                                                } else {
+                                                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                                                    marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                                    coverage.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                                }
+                                            }).catch(err => {
+                                                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                                                marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                                coverage.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                            });
+                                        } else {
+                                            marker.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                            coverage.setLatLng([parseFloat(loc.latitude), parseFloat(loc.longitude)]);
+                                        }
+                                        marker.dragging.disable();
+                                    });
+                                };
+                            }
+                        });
+                    }
                 });
             }
         });

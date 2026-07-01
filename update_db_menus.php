@@ -21,7 +21,7 @@ try {
       `css_class` varchar(255) DEFAULT NULL COMMENT 'Custom CSS classes for buttons',
       `parent_id` int DEFAULT NULL,
       `order_num` int DEFAULT 0,
-      `allowed_roles` json DEFAULT NULL COMMENT 'JSON array of allowed role_ids, NULL means all',
+      `allowed_roles` TEXT DEFAULT NULL COMMENT 'JSON array of allowed role_ids, NULL means all',
       `is_active` tinyint(1) DEFAULT 1,
       PRIMARY KEY (`id`),
       FOREIGN KEY (`parent_id`) REFERENCES `menus`(`id`) ON DELETE CASCADE
@@ -70,6 +70,12 @@ try {
         $stmt_child->execute(['backend', 'จัดการผู้ใช้', 'manage_users.php', $settings_id, 1]);
         $stmt_child->execute(['backend', 'จัดการแบนเนอร์', 'manage_hero.php', $settings_id, 2]);
         $stmt_child->execute(['backend', 'จัดการเมนู', 'manage_menus.php', $settings_id, 3]);
+
+        // Group 6: OPENDATA
+        $stmt->execute(['backend', 'OPENDATA', '#', 'fas fa-database', 6, null]);
+        $opendata_id = $pdo->lastInsertId();
+        $stmt_child->execute(['backend', 'คดียาเสพติดพัทลุง', 'report_criminal_cases.php', $opendata_id, 1]);
+        $stmt_child->execute(['backend', 'ผลยึดทรัพย์คดียาเสพติด', 'report_asset_seizures.php', $opendata_id, 2]);
 
         echo "Default menus inserted successfully.\n";
     } else {

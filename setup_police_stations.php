@@ -11,7 +11,7 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         station_name VARCHAR(150) NOT NULL,
         district_id INT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_district_id (district_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 

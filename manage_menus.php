@@ -434,9 +434,10 @@ if ($user_role_id != 1) {
                     // Child items
                     const childLists = document.querySelectorAll('.child-sortable');
                     childLists.forEach(list => {
+                        const parentId = list.dataset.parentId;
                         const items = list.querySelectorAll('li[data-id]');
                         items.forEach((li, index) => {
-                            orderData.push({ id: li.dataset.id, order: index + 1 });
+                            orderData.push({ id: li.dataset.id, order: index + 1, parent_id: parentId });
                         });
                     });
 
@@ -450,7 +451,8 @@ if ($user_role_id != 1) {
                             if (data.status === 'success') {
                                 Swal.fire({ icon: 'success', title: 'บันทึกลำดับสำเร็จ', showConfirmButton: false, timer: 1500 });
                                 this.orderChanged = false;
-                                this.fetchMenus();
+                                this.menus = [];
+                                setTimeout(() => { this.fetchMenus(); }, 50);
                             }
                         });
                 }
